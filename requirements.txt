@@ -1,116 +1,49 @@
-accelerate==0.20.3
-aiohttp==3.8.4
-aiosignal==1.3.1
 altair==5.0.1
-astroid @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_e9yo8l0380/croot/astroid_1676904320145/work
-async-timeout==4.0.2
 attrs==23.1.0
 beautifulsoup4==4.12.2
-bitsandbytes==0.39.1
-bleach==6.0.0
 blinker==1.6.2
 bs4==0.0.1
 cachetools==5.3.1
-certifi==2023.5.7
-charset-normalizer==3.1.0
-click==8.1.3
-colorama @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_100_k35lkb/croot/colorama_1672386539781/work
-datasets==2.13.1
-dill @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_7eaenha9af/croot/dill_1667919539340/work
-docutils==0.20.1
-einops==0.6.1
-filelock==3.12.2
-frozenlist==1.3.3
-fsspec==2023.6.0
-gensim==4.3.1
+certifi==2023.7.22
+charset-normalizer==3.2.0
+click==8.1.6
 gitdb==4.0.10
 GitPython==3.1.32
-huggingface-hub==0.15.1
 idna==3.4
 importlib-metadata==6.8.0
-isort @ file:///tmp/build/80754af9/isort_1628603791788/work
-jaraco.classes==3.3.0
-jieba==0.42.1
 Jinja2==3.1.2
-joblib==1.2.0
 jsonschema==4.19.0
 jsonschema-specifications==2023.7.1
-keyring==24.2.0
-lazy-object-proxy @ file:///Users/ktietz/ci_310/lazy-object-proxy_1643966535099/work
-llvmlite==0.40.1
-loguru==0.7.0
 markdown-it-py==3.0.0
 MarkupSafe==2.1.3
-mccabe @ file:///opt/conda/conda-bld/mccabe_1644221741721/work
 mdurl==0.1.2
-more-itertools==10.0.0
-mpmath==1.3.0
-multidict==6.0.4
-multiprocess==0.70.14
-networkx==3.1
-nltk==3.8.1
-numba==0.57.1
-numpy==1.24.4
-openai==0.27.8
+numpy==1.25.2
 packaging==23.1
-pandas==2.0.2
+pandas==2.0.3
 Pillow==9.5.0
-pkginfo==1.9.6
-platformdirs @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_f7wx6m2jsp/croots/recipe/platformdirs_1662711384790/work
-protobuf==3.20.0
-psutil==5.9.5
+protobuf==4.24.0
 pyarrow==12.0.1
 pydeck==0.8.0
-Pygments==2.15.1
-pylint @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_den022q02c/croot/pylint_1676919908684/work
+Pygments==2.16.1
 Pympler==1.0.1
-pynndescent==0.5.10
 python-dateutil==2.8.2
-python-dotenv==1.0.0
 pytz==2023.3
 pytz-deprecation-shim==0.1.0.post0
-PyYAML==6.0
-readme-renderer==40.0
 referencing==0.30.2
-regex==2023.6.3
 requests==2.31.0
-requests-toolbelt==1.0.0
-rfc3986==2.0.0
 rich==13.5.2
-rjieba==0.1.11
 rpds-py==0.9.2
-safetensors==0.3.1
-scikit-learn==1.2.2
-scipy==1.10.1
-sentencepiece==0.1.99
 six==1.16.0
-smart-open==6.3.0
 smmap==5.0.0
 soupsieve==2.4.1
 streamlit==1.25.0
-sympy==1.12
 tenacity==8.2.3
-text2vec==1.2.1
-threadpoolctl==3.1.0
-tiktoken==0.4.0
-tokenizers==0.13.3
 toml==0.10.2
-tomli @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_d0e5ffbf-5cf1-45be-8693-c5dff8108a2awhthtjlq/croots/recipe/tomli_1657175508477/work
-tomlkit @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_0dfcgmelf8/croots/recipe/tomlkit_1658946892438/work
 toolz==0.12.0
-torch==2.0.1
 tornado==6.3.3
-tqdm==4.65.0
-transformers==4.30.2
-twine==4.0.2
-typing_extensions==4.6.3
+typing_extensions==4.7.1
 tzdata==2023.3
 tzlocal==4.3.1
-umap-learn==0.5.3
-urllib3==2.0.3
+urllib3==2.0.4
 validators==0.21.2
-webencodings==0.5.1
-wrapt @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_37a5af2b-c563-4ec6-9258-35772bae6a6agcs4j3hx/croots/recipe/wrapt_1657814428573/work
-xxhash==3.2.0
-yarl==1.9.2
 zipp==3.16.2
