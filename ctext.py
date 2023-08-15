@@ -9,6 +9,7 @@ import streamlit as st
 LINK_S2T = 'https://raw.githubusercontent.com/BYVoid/OpenCC/master/data/dictionary/STCharacters.txt'
 LINK_T2S = 'https://raw.githubusercontent.com/BYVoid/OpenCC/master/data/dictionary/TSCharacters.txt'
 
+@st.cache_data
 def get_dict(url, with_single_match=True):
     content = requests.get(url, timeout=60).content.decode('utf-8')
     dic = {}
@@ -145,28 +146,11 @@ def main():
 def web():
     with st.sidebar:
         st.title('ctext 繁简转换纠错辅助工具')
-        url = st.text_input('ctext 书籍链接', 'https://ctext.org/zhuangzi/inner-chapters/zh')
+        url = st.text_input('ctext 书籍链接')
         ignore = st.text_input('忽略的字')
+        st.button('开始检查')
     if url:
         candidates = find_error_candidates(url, ignore)
-        # candidates = {
-        #     '繁': {
-        #         'c': '繁',
-        #         't': '繁',
-        #         'items': [
-        #             {
-        #                 'chapter': '第一卷',
-        #                 'context': '第一卷第一章',
-        #                 'link': 'https://ctext.org/zh/zhong-yong/zh'
-        #             },
-        #             {
-        #                 'chapter': '第二卷',
-        #                 'context': '第二卷第二章',
-        #                 'link': 'https://ctext.org/zh/zhong-yong/zh'
-        #             },
-        #         ]
-        #     },
-        # }
         if len(candidates) > 0:
             for v in candidates.values():
                 # st.divider()
@@ -179,11 +163,7 @@ def web():
                     context = item['context'].replace(v['c'], f" **{v['c']}** ")
                     context = context.replace('\n', ' ')
                     print(context)
-                    # loc = context.index(v['c'])
-                    # context = [context[:loc], (v['c'], f"({','.join(v['t'])})"), context[loc+1:]]
                     markdown += f"| {i+1} | {item['chapter']} | ...[{context}]({item['link']})... |\n"
-                    # st.markdown(f"| {item['chapter']} | ...{item['context']}... | {item['link']} |")
-                    # st.write(f"    {item['chapter']}\t……{item['context']}……\t{item['link']}")
                 st.markdown(markdown)
         else:
             st.write('没有可能存在错误的繁简转换')
