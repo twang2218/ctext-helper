@@ -37,7 +37,7 @@ def get_title(html, style):
     try:
         title_element = html.select_one(style)
         if title_element is None:
-            print('> 无法获取标题')
+            logger('> 无法获取标题')
             return ''
         # 复制元素，以便我们不修改原始HTML
         temp_element = copy.deepcopy(title_element)
@@ -48,18 +48,18 @@ def get_title(html, style):
         return temp_element.get_text(strip=True)
     # pylint: disable=broad-except
     except Exception as ex:
-        print(f'> 无法获取标题: {ex}')
+        logger(f'> 无法获取标题: {ex}')
         return ''
 
 def get_book_chapters(url):
-    print('正在获取章节列表……')
+    logger('正在获取章节列表……')
     content = requests.get(url, timeout=60).content.decode('utf-8')
     # 只获取到域名为止的部分
     base_parts = url.rstrip('/').split('/')
     baseurl = '/'.join(base_parts[:3])
     html = BeautifulSoup(content, 'html.parser')
     title = get_title(html, '.wikiitemtitle')
-    print(f"书籍标题：{title}")
+    logger(f"书籍标题：{title}")
     chapters = html.select('div.ctext span a')
     if len(chapters) == 0:
         # 可能是「原典全文」中的内容
@@ -67,15 +67,15 @@ def get_book_chapters(url):
         if len(chapters) == 0:
             chapters = html.select('div#content2 > a')
     chapters = {a.get_text(): urljoin(baseurl, a['href']) for a in chapters}
-    print(f"共有 {len(chapters)} 章节")
+    logger(f"共有 {len(chapters)} 章节")
     return chapters,title
 
 def get_chapter_paragraphs(url):
-    print('正在获取段落列表……')
+    logger('正在获取段落列表……')
     content = requests.get(url, timeout=60).content.decode('utf-8')
     html = BeautifulSoup(content, 'html.parser')
     title = get_title(html, '.wikisectiontitle')
-    print(f"章节标题：{title}")
+    logger(f"章节标题：{title}")
     paragraphs = html.select('tr.result')
     if len(paragraphs) > 0:
         paragraphs = {p['id']: p.find_all('td', {'class': 'ctext'})[1].get_text() for p in paragraphs}
@@ -87,7 +87,7 @@ def get_chapter_paragraphs(url):
             if p.has_attr('id'):
                 new_paragraphs[p['id']] = p.get_text()
         paragraphs = new_paragraphs
-    print(f"共有 {len(paragraphs)} 段落")
+    logger(f"共有 {len(paragraphs)} 段落")
     return paragraphs, title
 
 def check_s2t_multiple(paragraph, chapter='', link='', paragraph_id='', ignore=''):
@@ -114,7 +114,7 @@ def check_s2t_multiple(paragraph, chapter='', link='', paragraph_id='', ignore='
     return candidates
 
 def summary(all_candidates):
-    print('正在归纳……')
+    logger('正在归纳……')
     candidates = {}
     for candidate in all_candidates:
         if candidate['c'] not in candidates:
@@ -132,7 +132,7 @@ def summary(all_candidates):
     keys = list(candidates.keys())
     keys.sort()
     candidates = {k: candidates[k] for k in keys}
-    print(f">    共有 {len(candidates)} 个可能存在错误的繁简对")
+    logger(f">    共有 {len(candidates)} 个可能存在错误的繁简对")
     return candidates
 
 def find_error_candidates_in_book(url:str, ignore:str=''):
@@ -162,6 +162,27 @@ def find_error_candidates_in_chapter(url:str, ignore:str=''):
     # 归纳
     return summary(all_candidates), chapter_title
 
+logger_holder = None
+logger_content = ''
+def logger(msg):
+    global logger_content
+    if logger_holder is None:
+        print(msg)
+        return
+    else:
+        print(f'logger_holder.text({msg})')
+        logger_content += msg + '\n'
+        logger_holder.text(logger_content)
+
+def clear_logger():
+    global logger_content
+    if logger_holder is None:
+        print('logger_holder is None')
+        return
+    else:
+        print('logger_holder.empty()')
+        logger_holder.empty()
+    logger_content = ''
 
 def main():
     args = argparse.ArgumentParser()
@@ -197,13 +218,21 @@ def main():
                 print(f"    {item['chapter']}\t……{item['context']}……\t{item['link']}")
         print()
 
+
 def web():
+    global logger_holder, body_holder
+    clear_logger()
     with st.sidebar:
         st.title('ctext 繁简转换纠错辅助工具')
         url = st.text_input('ctext 书籍链接')
         ignore = st.text_input('忽略的字')
-        st.button('开始检查')
-    if url:
+        keep_log = st.checkbox('显示日志', value=True)
+        if st.button('开始检查'):
+            st.session_state.button_clicked = True
+        logger_holder = st.sidebar.empty()
+
+    if 'button_clicked' in st.session_state:
+        del st.session_state.button_clicked
         url = url.strip()
         if '&res=' in url or url.endswith('/zh'):
             # 书籍链接
@@ -215,10 +244,10 @@ def web():
             st.warning('无效的链接。请使用 ctext 的书籍链接或者章节链接。如果是确认链接是正确的，请联系作者。 (QQ：2107553024)')
             return
         if len(candidates) > 0:
-            st.write(f"## {title}")
+            st.markdown(f"## {title}")
             for v in candidates.values():
                 # st.divider()
-                st.write(f"### {v['c']} => {','.join(v['t']):10}")
+                st.markdown(f"### {v['c']} => {','.join(v['t']):10}")
 
                 # st.table(v['items'])
                 markdown = '| ID | 章节 | 上下文 |\n'
@@ -229,8 +258,10 @@ def web():
                     markdown += f"| {i+1} | {item['chapter']} | ...[{context}]({item['link']})... |\n"
                 st.markdown(markdown)
         else:
-            st.info('没有可能存在错误的繁简转换')
-    
+            logger_holder.info('没有可能存在错误的繁简转换')
+        if not keep_log:
+            clear_logger()
+
 if __name__ == '__main__':
     # main()
     web()
