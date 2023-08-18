@@ -210,7 +210,7 @@ def main():
                 f.write(f"{v['c']} -> {v['t']:10}\n")
                 for item in v['items']:
                     f.write(f"    {item['chapter']}\t……{item['context']}……\t{item['link']}\n")
-        f.write('\n')
+            f.write('\n')
     else:
         for v in candidates.values():
             print(f"{v['c']} -> {v['t']:10}")
@@ -263,6 +263,7 @@ def web():
             clear_logger()
 
 if __name__ == '__main__':
-    # main()
-    web()
-
+    if len(sys.argv) > 1:
+        main()
+    else:
+        web()
