@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 import sys
 import argparse
 import streamlit as st
+import copy
 
 LINK_S2T = 'https://raw.githubusercontent.com/BYVoid/OpenCC/master/data/dictionary/STCharacters.txt'
 LINK_T2S = 'https://raw.githubusercontent.com/BYVoid/OpenCC/master/data/dictionary/TSCharacters.txt'
@@ -32,16 +33,34 @@ def get_dict(url, with_single_match=True):
 s2tm = get_dict(LINK_S2T, with_single_match=False)
 t2s = get_dict(LINK_T2S, with_single_match=True)
 
+def get_title(html, style):
+    try:
+        title_element = html.select_one(style)
+        if title_element is None:
+            print('> 无法获取标题')
+            return ''
+        # 复制元素，以便我们不修改原始HTML
+        temp_element = copy.deepcopy(title_element)
+        # 删除 <span> 标签及其内容
+        for span in temp_element.find_all("span"):
+            span.decompose()
+        # 获取清理后的文本
+        return temp_element.get_text(strip=True)
+    # pylint: disable=broad-except
+    except Exception as ex:
+        print(f'> 无法获取标题: {ex}')
+        return ''
+
 def get_book_chapters(url):
-    print(f'正在获取章节列表……')
+    print('正在获取章节列表……')
     content = requests.get(url, timeout=60).content.decode('utf-8')
     # 只获取到域名为止的部分
     base_parts = url.rstrip('/').split('/')
     baseurl = '/'.join(base_parts[:3])
-
     html = BeautifulSoup(content, 'html.parser')
+    title = get_title(html, '.wikiitemtitle')
+    print(f"书籍标题：{title}")
     chapters = html.select('div.ctext span a')
-    print(chapters)
     if len(chapters) == 0:
         # 可能是「原典全文」中的内容
         chapters = html.select('div#content3 > a')
@@ -49,12 +68,14 @@ def get_book_chapters(url):
             chapters = html.select('div#content2 > a')
     chapters = {a.get_text(): urljoin(baseurl, a['href']) for a in chapters}
     print(f"共有 {len(chapters)} 章节")
-    return chapters
+    return chapters,title
 
 def get_chapter_paragraphs(url):
-    print(f'正在获取段落列表……')
+    print('正在获取段落列表……')
     content = requests.get(url, timeout=60).content.decode('utf-8')
     html = BeautifulSoup(content, 'html.parser')
+    title = get_title(html, '.wikisectiontitle')
+    print(f"章节标题：{title}")
     paragraphs = html.select('tr.result')
     if len(paragraphs) > 0:
         paragraphs = {p['id']: p.find_all('td', {'class': 'ctext'})[1].get_text() for p in paragraphs}
@@ -66,7 +87,8 @@ def get_chapter_paragraphs(url):
             if p.has_attr('id'):
                 new_paragraphs[p['id']] = p.get_text()
         paragraphs = new_paragraphs
-    return paragraphs
+    print(f"共有 {len(paragraphs)} 段落")
+    return paragraphs, title
 
 def check_s2t_multiple(paragraph, chapter='', link='', paragraph_id='', ignore=''):
     candidates = []
@@ -88,10 +110,11 @@ def check_s2t_multiple(paragraph, chapter='', link='', paragraph_id='', ignore='
                     'link': link,
                     'paragraph_id': paragraph_id,
                 })
-    print(f">    {len(candidates)} 个可能存在错误的繁简转换段落")
+    print(f">   {paragraph_id:>5}: {len(candidates)} 个可能存在错误的繁简转换段落")
     return candidates
 
 def summary(all_candidates):
+    print('正在归纳……')
     candidates = {}
     for candidate in all_candidates:
         if candidate['c'] not in candidates:
@@ -116,30 +139,28 @@ def find_error_candidates_in_book(url:str, ignore:str=''):
     if not url.startswith('http'):
         print(f"Invalid url: {url}")
         sys.exit(1)
-    print(f'正在获取章节列表……')
-    chapters = get_book_chapters(url)
-    print(f"共有 {len(chapters)} 章节")
+    chapters, book_title = get_book_chapters(url)
     all_candidates = []
     for chapter, link in chapters.items():
         print(f"{chapter:<20} \t {link}")
-        paragraphs = get_chapter_paragraphs(link)
+        paragraphs, _ = get_chapter_paragraphs(link)
         for paragraph_id, paragraph in paragraphs.items():
             candidates = check_s2t_multiple(paragraph, chapter, link, paragraph_id, ignore)
             all_candidates.extend(candidates)
     # 归纳
-    return summary(all_candidates)
+    return summary(all_candidates), book_title
 
 def find_error_candidates_in_chapter(url:str, ignore:str=''):
     if not url.startswith('http'):
         print(f"Invalid url: {url}")
         sys.exit(1)
     all_candidates = []
-    paragraphs = get_chapter_paragraphs(url)
+    paragraphs, chapter_title = get_chapter_paragraphs(url)
     for paragraph_id, paragraph in paragraphs.items():
         candidates = check_s2t_multiple(paragraph, '', url, paragraph_id, ignore)
         all_candidates.extend(candidates)
     # 归纳
-    return summary(all_candidates)
+    return summary(all_candidates), chapter_title
 
 
 def main():
@@ -152,10 +173,10 @@ def main():
     url = args.url.strip()
     if '&res=' in url or url.endswith('/zh'):
         # 书籍链接
-        candidates = find_error_candidates_in_book(url, args.ignore)
+        candidates, title = find_error_candidates_in_book(url, args.ignore)
     elif 'chapter=' in url:
         # 章节链接
-        candidates = find_error_candidates_in_chapter(url, args.ignore)
+        candidates, title = find_error_candidates_in_chapter(url, args.ignore)
     else:
         print('无效的链接。请使用 ctext 的书籍链接或者章节链接。如果是确认链接是正确的，请联系作者。 (QQ：2107553024)')
         return
@@ -163,15 +184,18 @@ def main():
     # 输出
     if args.file:
         with open(args.file, 'w', encoding='utf-8') as f:
+            f.write(f"## 标题：{title}\n\n")
             for v in candidates.values():
                 f.write(f"{v['c']} -> {v['t']:10}\n")
                 for item in v['items']:
                     f.write(f"    {item['chapter']}\t……{item['context']}……\t{item['link']}\n")
+        f.write('\n')
     else:
         for v in candidates.values():
             print(f"{v['c']} -> {v['t']:10}")
             for item in v['items']:
                 print(f"    {item['chapter']}\t……{item['context']}……\t{item['link']}")
+        print()
 
 def web():
     with st.sidebar:
@@ -183,14 +207,15 @@ def web():
         url = url.strip()
         if '&res=' in url or url.endswith('/zh'):
             # 书籍链接
-            candidates = find_error_candidates_in_book(url, ignore)
+            candidates, title = find_error_candidates_in_book(url, ignore)
         elif 'chapter=' in url:
             # 章节链接
-            candidates = find_error_candidates_in_chapter(url, ignore)
+            candidates, title = find_error_candidates_in_chapter(url, ignore)
         else:
-            st.write('无效的链接。请使用 ctext 的书籍链接或者章节链接。如果是确认链接是正确的，请联系作者。 (QQ：2107553024)')
+            st.warning('无效的链接。请使用 ctext 的书籍链接或者章节链接。如果是确认链接是正确的，请联系作者。 (QQ：2107553024)')
             return
         if len(candidates) > 0:
+            st.write(f"## {title}")
             for v in candidates.values():
                 # st.divider()
                 st.write(f"### {v['c']} => {','.join(v['t']):10}")
@@ -201,11 +226,10 @@ def web():
                 for i, item in enumerate(v['items']):
                     context = item['context'].replace(v['c'], f" **{v['c']}** ")
                     context = context.replace('\n', ' ')
-                    print(context)
                     markdown += f"| {i+1} | {item['chapter']} | ...[{context}]({item['link']})... |\n"
                 st.markdown(markdown)
         else:
-            st.write('没有可能存在错误的繁简转换')
+            st.info('没有可能存在错误的繁简转换')
     
 if __name__ == '__main__':
     # main()
