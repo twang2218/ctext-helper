@@ -244,10 +244,28 @@ def web():
             st.warning('无效的链接。请使用 ctext 的书籍链接或者章节链接。如果是确认链接是正确的，请联系作者。 (QQ：2107553024)')
             return
         if len(candidates) > 0:
-            st.markdown(f"## {title}")
-            for v in candidates.values():
-                # st.divider()
-                st.markdown(f"### {v['c']} => {','.join(v['t']):10}")
+            def get_item_title(v):
+                return f"{v['c']} => {','.join(v['t']):10}"
+            st.markdown(f"# {title}")
+            # 目录
+            st.header('目录', anchor='toc')
+            num_candidates = len(candidates)
+            cols = 4
+            header = '|' * cols + '|\n'
+            header += '| --- ' * cols + '|\n'
+            body = ''
+            for i in range(0, num_candidates, cols):
+                row = '|'
+                for j in range (0, cols):
+                    if i + j < num_candidates:
+                        v = list(candidates.values())[i+j]
+                        row += f"({i+j+1}) [{get_item_title(v)}](#{i+j+1}) |"
+                body += row + '\n'
+            st.markdown(header + body)
+            # 条目
+            st.markdown('## 条目')
+            for i, v in enumerate(candidates.values()):
+                st.header(get_item_title(v), anchor=f"{i+1}")
 
                 # st.table(v['items'])
                 markdown = '| ID | 章节 | 上下文 |\n'
@@ -257,6 +275,7 @@ def web():
                     context = context.replace('\n', ' ')
                     markdown += f"| {i+1} | {item['chapter']} | ...[{context}]({item['link']})... |\n"
                 st.markdown(markdown)
+                st.markdown('*[返回目录](#toc)*')
         else:
             logger_holder.info('没有可能存在错误的繁简转换')
         if not keep_log:
